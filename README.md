@@ -2,7 +2,9 @@
 
 # QMK to ZMK
 
-This is a utility for converting JSON files from the QMK Configurator into ZMK keymap files. To use, paste your JSON file into the left input, and the output keymap will be in the right text input.
+This is a utility for converting JSON files from the [QMK Configurator](https://config.qmk.fm/) into ZMK keymap files. To use, paste your JSON file into the left input, and the output keymap will be in the right text input.
+
+An example JSON that has been tested to import properly into ZMK is [here](https://github.com/aaronsantiago/zmk-config/blob/main/lily58_rev1_layout_mine.json).
 
 ## Special Keys
 For any specific ZMK commands you might need, like bluetooth keys, use the ANY key and type in the entire ZMK command including the ampersand, for example:
