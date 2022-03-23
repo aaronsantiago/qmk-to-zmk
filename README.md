@@ -17,8 +17,13 @@ Most behaviors such as Mod-Taps, Layer-Taps, etc. are supported, except for any 
 
 Any keys that I could not figure out the correct mapping I set to F20, so I invite contributors with more knowledge to help out!
 
-## Architecture and Design
+## Contributing: Architecture and Design
 
 This utility is intentionally designed as a lightweight, single file. It works both hosted and as a downloaded HTML file for offline use.
 
 For functionality, this should generally be limited to anything from QMK that can be trivially translated into ZMK.
+
+Some useful references:
+ - [QMK Keycodes](https://github.com/qmk/qmk_firmware/blob/master/docs/keycodes.md)
+ - [ZMK Keycodes](https://zmk.dev/docs/codes/)
+ - [ZMK Behaviors](https://zmk.dev/docs/behaviors/layers)
