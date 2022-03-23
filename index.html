@@ -1,5 +1,9 @@
 <html>
-  <textarea id="inputText">{
+  <h1>QMK JSON to ZMK Keymap converter</h1>
+  <div>To use, paste your JSON from the <a href="https://config.qmk.fm/">QMK Configurator</a> into the left input, and the output keymap will be in the right text input.</div>
+  <div style="margin-bottom:5vh;">For more information, see the <a href="https://github.com/aaronsantiago/qmk-to-zmk">Github repository</a>.</div>
+  <div><div style="float:left;width: 45vw">Input QMK JSON</div><div style="float:right;width: 45vw">Output ZMK Keymap</div></div>
+  <textarea oninput="updateKeymap();" id="inputText" style="width:45vw; height: 50vh;">{
     "version": 1,
     "notes": "",
     "documentation": "\"This file is a QMK Configurator export. You can import this at <https://config.qmk.fm>. It can also be used directly with QMK's source code.\n\nTo setup your QMK environment check out the tutorial: <https://docs.qmk.fm/#/newbs>\n\nYou can convert this file to a keymap.c using this command: `qmk json2c {keymap}`\n\nYou can compile this keymap using this command: `qmk compile {keymap}`\"\n",
@@ -250,7 +254,7 @@
     ],
     "author": ""
   }</textarea>
-  <textarea id="output">your zmk keymap will show up here</textarea>
+  <textarea id="output" style="width:45vw; height: 50vh;">your zmk keymap will show up here</textarea>
 
 <script>
 
@@ -716,86 +720,86 @@ let procedural_key_map = {
   "LCTL": (key) => `&mt LEFT_CONTROL ${parseKey(key)}`,
   "ANY": (command) => command,
 }
+let updateKeymap = function() {
+  let input = document.getElementById("inputText");
+  let inputObject = JSON.parse(input.value);
+  console.log(inputObject.layers);
 
-let input = document.getElementById("inputText");
-let inputObject = JSON.parse(input.value);
-console.log(inputObject.layers);
+  let outputPrefix = `
+  /*
+  * Copyright (c) 2020 The ZMK Contributors
+  *
+  * SPDX-License-Identifier: MIT
+  */
 
-let outputPrefix = `
-/*
- * Copyright (c) 2020 The ZMK Contributors
- *
- * SPDX-License-Identifier: MIT
- */
+  #include <behaviors.dtsi>
+  #include <dt-bindings/zmk/keys.h>
+  #include <dt-bindings/zmk/bt.h>
+  #include <dt-bindings/zmk/ext_power.h>
 
-#include <behaviors.dtsi>
-#include <dt-bindings/zmk/keys.h>
-#include <dt-bindings/zmk/bt.h>
-#include <dt-bindings/zmk/ext_power.h>
+  / {
+    keymap {
+      compatible = "zmk,keymap";
+  `;
 
-/ {
-	keymap {
-		compatible = "zmk,keymap";
-`;
+  let processKeyInProceduralKeyMap = function (key) {
+    for (let keyMapPrefix in procedural_key_map) {
+      if (key.startsWith(keyMapPrefix)) {
+        let func = procedural_key_map[keyMapPrefix];
 
-let processKeyInProceduralKeyMap = function (key) {
-  for (let keyMapPrefix in procedural_key_map) {
-    if (key.startsWith(keyMapPrefix)) {
-      let func = procedural_key_map[keyMapPrefix];
+        let openParensIndex = key.indexOf("(");
+        let closeParensIndex = key.indexOf(")");
+        let paramsString = key.slice(openParensIndex + 1, closeParensIndex);
 
-      let openParensIndex = key.indexOf("(");
-      let closeParensIndex = key.indexOf(")");
-      let paramsString = key.slice(openParensIndex + 1, closeParensIndex);
-
-      let params = paramsString.split(",");
-      return func(...params);
-    }
-  }
-  return null;
-}
-
-let i = 0;
-let outputText = "";
-for (let layer of inputObject.layers) {
-  let layerPrefix = `layer${i++} {
-        bindings = <
-        `
-  let layerSuffix = `
-        >;
-      };`;
-
-  let layerText = "";
-
-  let result = null;
-  for (let key of layer) {
-    if (layerText != "") layerText += " ";
-    if (!(key in basic_key_map) && !(key in special_key_map) && !processKeyInProceduralKeyMap(key)) {
-      console.log(`cannot find "${key}"`);
-    }
-    result = processKeyInProceduralKeyMap(key);
-    if (!result) {
-      if (key in special_key_map) {
-        result = special_key_map[key];
-      }
-      else if (key in basic_key_map) {
-        result = `&kp ${basic_key_map[key]}`;
+        let params = paramsString.split(",");
+        return func(...params);
       }
     }
-    if (!result) {
-      result = key;
-    }
-    layerText += result;
+    return null;
   }
-  outputText += layerPrefix + layerText + layerSuffix;
-  
+
+  let i = 0;
+  let outputText = "";
+  for (let layer of inputObject.layers) {
+    let layerPrefix = `layer${i++} {
+          bindings = <
+          `
+    let layerSuffix = `
+          >;
+        };`;
+
+    let layerText = "";
+
+    let result = null;
+    for (let key of layer) {
+      if (layerText != "") layerText += " ";
+      if (!(key in basic_key_map) && !(key in special_key_map) && !processKeyInProceduralKeyMap(key)) {
+        console.log(`cannot find "${key}"`);
+      }
+      result = processKeyInProceduralKeyMap(key);
+      if (!result) {
+        if (key in special_key_map) {
+          result = special_key_map[key];
+        }
+        else if (key in basic_key_map) {
+          result = `&kp ${basic_key_map[key]}`;
+        }
+      }
+      if (!result) {
+        result = key;
+      }
+      layerText += result;
+    }
+    outputText += layerPrefix + layerText + layerSuffix;
+    
+  }
+
+  let outputSuffix = `
+    };
+  };
+  `;
+
+  document.getElementById("output").value = outputPrefix + outputText + outputSuffix;
 }
-
-let outputSuffix = `
-	};
-};
-`;
-
-document.getElementById("output").value = outputPrefix + outputText + outputSuffix;
-
 </script>
 </html>
