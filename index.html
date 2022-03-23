@@ -1,8 +1,10 @@
 <html>
   <h1>QMK JSON to ZMK Keymap converter</h1>
+  
   <div>To use, paste your JSON from the <a href="https://config.qmk.fm/">QMK Configurator</a> into the left input, and the output keymap will be in the right text input.</div>
   <div style="margin-bottom:5vh;">For more information, see the <a href="https://github.com/aaronsantiago/qmk-to-zmk">Github repository</a>.</div>
   <div><div style="float:left;width: 45vw">Input QMK JSON</div><div style="float:right;width: 45vw">Output ZMK Keymap</div></div>
+  
   <textarea oninput="updateKeymap();" id="inputText" style="width:45vw; height: 50vh;">{
     "version": 1,
     "notes": "",
@@ -23,7 +25,7 @@
         "KC_UP",
         "KC_LEFT",
         "KC_RGHT",
-        "TG(2)",
+        "KC_DEL",
         "KC_TAB",
         "KC_Q",
         "KC_W",
@@ -64,7 +66,7 @@
         "KC_RSFT",
         "KC_LALT",
         "KC_LGUI",
-        "LCTL(KC_ENT)",
+        "LCTL_T(KC_ENT)",
         "MO(1)",
         "LT(1,KC_SPC)",
         "KC_RCTL",
@@ -130,138 +132,26 @@
         "KC_TRNS",
         "KC_TRNS",
         "KC_TRNS"
-      ],
-      [
-        "KC_ESC",
-        "KC_1",
-        "KC_2",
-        "KC_3",
-        "KC_4",
-        "KC_5",
-        "KC_6",
-        "KC_7",
-        "KC_8",
-        "KC_9",
-        "KC_0",
-        "KC_TRNS",
-        "KC_TAB",
-        "KC_Q",
-        "KC_W",
-        "KC_E",
-        "KC_R",
-        "KC_T",
-        "KC_Y",
-        "KC_U",
-        "KC_I",
-        "KC_O",
-        "KC_P",
-        "KC_TRNS",
-        "KC_LSFT",
-        "KC_A",
-        "KC_S",
-        "KC_D",
-        "KC_F",
-        "KC_G",
-        "KC_H",
-        "KC_J",
-        "KC_K",
-        "KC_L",
-        "KC_SCLN",
-        "KC_ENT",
-        "KC_LCTL",
-        "KC_Z",
-        "KC_X",
-        "KC_C",
-        "KC_V",
-        "KC_B",
-        "KC_GRV",
-        "KC_TRNS",
-        "KC_N",
-        "KC_M",
-        "KC_COMM",
-        "KC_DOT",
-        "KC_SLSH",
-        "KC_RSFT",
-        "MO(3)",
-        "KC_LGUI",
-        "KC_SPC",
-        "KC_LALT",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS"
-      ],
-      [
-        "KC_F1",
-        "KC_F2",
-        "KC_F3",
-        "KC_F4",
-        "KC_F5",
-        "KC_F6",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_F7",
-        "KC_F8",
-        "KC_F9",
-        "KC_F10",
-        "KC_F11",
-        "KC_F12",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_F13",
-        "KC_F14",
-        "KC_F15",
-        "KC_F16",
-        "KC_F17",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_F18",
-        "KC_F19",
-        "KC_F20",
-        "KC_F21",
-        "KC_F22",
-        "KC_F23",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_NO",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS",
-        "KC_TRNS"
       ]
     ],
     "author": ""
   }</textarea>
+
   <textarea id="output" style="width:45vw; height: 50vh;">your zmk keymap will show up here</textarea>
 
 <script>
 
+// ****************** KEY MAPS ********************************
+// No, not keymaps...key maps. These dictionaries hold the mappings from QMK to ZMK codes.
+
+// These will be translated directly as the string on the right.
 let special_key_map = {
 "KC_TRNS" : "&trans",
 "KC_NO" : "&kp F20"
 }
+
+// These are translated with &kp as a prefix.
+  // Any keys I was unsure of are set as F20 --Aaron
 let basic_key_map = {
 "KC_A" : "A",
 "KC_B" : "B",
@@ -581,7 +471,9 @@ let basic_key_map = {
 "KC_MRWD": "C_REWIND",
 "KC_BRIU": "C_BRIGHTNESS_INC",
 "KC_BRID": "C_BRIGHTNESS_DEC",
-// alternate keys"KC_ENT": "ENTER",
+
+// alternate keys
+"KC_ENT": "ENTER",
 "KC_ESC": "ESCAPE",
 "KC_BSPC": "BACKSPACE",
 "KC_SPC": "SPACE",
@@ -706,6 +598,7 @@ let basic_key_map = {
 "KC_BRID": "C_BRIGHTNESS_DEC"
 };
 
+// utility function for the procedural key map
 let parseKey = function (key) {
   if (!(key in basic_key_map)) {
     return key;
@@ -713,18 +606,27 @@ let parseKey = function (key) {
   return basic_key_map[key];
 }
 
+// These are special: when the QMK code starts with any of these, the inputs to the QMK command
+// are parsed and passed in to the function that the QMK code is mapped to.
+// See processKeyInProceduralKeymap
 let procedural_key_map = {
   "LT": (layer, key) => `&lt ${layer} ${parseKey(key)}`,
   "TG": (layer) => `&tog ${layer}`,
   "MO": (layer) => `&mo ${layer}`,
-  "LCTL": (key) => `&mt LEFT_CONTROL ${parseKey(key)}`,
+  "LCTL_T": (key) => `&mt LEFT_CONTROL ${parseKey(key)}`,
+  "LSFT_T": (key) => `&mt LEFT_SHIFT ${parseKey(key)}`,
+  "LALT_T": (key) => `&mt LEFT_ALT ${parseKey(key)}`,
+  "LGUI_T": (key) => `&mt LEFT_GUI ${parseKey(key)}`,
   "ANY": (command) => command,
 }
+
+
+// ****************** JSON PROCESSING ********************************
 let updateKeymap = function() {
   let input = document.getElementById("inputText");
   let inputObject = JSON.parse(input.value);
-  console.log(inputObject.layers);
 
+  // Boilerplate text from the beginning and end of the file
   let outputPrefix = `
   /*
   * Copyright (c) 2020 The ZMK Contributors
@@ -742,6 +644,13 @@ let updateKeymap = function() {
       compatible = "zmk,keymap";
   `;
 
+  let outputSuffix = `
+    };
+  };
+  `;
+
+  // Parse out the inputs to the QMK command and pass them back into the function from
+  // the procedural key map
   let processKeyInProceduralKeyMap = function (key) {
     for (let keyMapPrefix in procedural_key_map) {
       if (key.startsWith(keyMapPrefix)) {
@@ -761,9 +670,11 @@ let updateKeymap = function() {
   let i = 0;
   let outputText = "";
   for (let layer of inputObject.layers) {
+
+    // Text that goes around each layer, with an incrementing layer name.
     let layerPrefix = `layer${i++} {
           bindings = <
-          `
+          `;
     let layerSuffix = `
           >;
         };`;
@@ -772,33 +683,42 @@ let updateKeymap = function() {
 
     let result = null;
     for (let key of layer) {
+      // separate by space only after the first key
       if (layerText != "") layerText += " ";
+
+      // if you ever see this console log, it's probably time to add something to one of the key maps
       if (!(key in basic_key_map) && !(key in special_key_map) && !processKeyInProceduralKeyMap(key)) {
         console.log(`cannot find "${key}"`);
       }
+
+      // check if there was a procedural key hit
       result = processKeyInProceduralKeyMap(key);
+
+      // otherwise...
       if (!result) {
+        // check if there's a special key hit
         if (key in special_key_map) {
           result = special_key_map[key];
         }
+        // otherwise check if there's a basic key hit
         else if (key in basic_key_map) {
           result = `&kp ${basic_key_map[key]}`;
         }
       }
+
+      // pass through the QMK command if we didn't get anything.
       if (!result) {
         result = key;
       }
       layerText += result;
     }
+
+    // Add the layer to the output.
     outputText += layerPrefix + layerText + layerSuffix;
     
   }
 
-  let outputSuffix = `
-    };
-  };
-  `;
-
+  // Done!
   document.getElementById("output").value = outputPrefix + outputText + outputSuffix;
 }
 
