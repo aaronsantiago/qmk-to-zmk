@@ -11,9 +11,7 @@ For any specific ZMK commands you might need, like bluetooth keys, use the ANY k
 
 `&bt BT_SEL 0`
 
-Behaviors such as Mod-Taps, Layer-Taps, etc. are supported, except for any that don't exist in ZMK like Tap Dance.
-
-*HOWEVER*, this utility is a work in progress so there are missing keys and functionalities. I'm accepting pull requests to fill in keys, correct any errors, or add more functionalities.
+This utility is a work in progress so there are missing keys and functionalities. I'm accepting pull requests to fill in keys, correct any errors, or add more functionalities.
 
 Any keys that I could not figure out the correct mapping I set to F20, so I invite contributors with more knowledge to help out!
 
