@@ -612,6 +612,7 @@ let parseKey = function (key) {
 let procedural_key_map = {
   "LT": (layer, key) => `&lt ${layer} ${parseKey(key)}`,
   "TG": (layer) => `&tog ${layer}`,
+  "TO": (layer) => `&to ${layer}`,
   "MO": (layer) => `&mo ${layer}`,
   "LCTL_T": (key) => `&mt LEFT_CONTROL ${parseKey(key)}`,
   "LSFT_T": (key) => `&mt LEFT_SHIFT ${parseKey(key)}`,
