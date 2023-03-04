@@ -3,7 +3,9 @@
   
   <div>To use, paste your JSON from the <a href="https://config.qmk.fm/">QMK Configurator</a> into the left input, and the output keymap will be in the right text input.</div>
   <div style="margin-bottom:5vh;">For more information, see the <a href="https://github.com/aaronsantiago/qmk-to-zmk">Github repository</a>.</div>
+  
   <div><div style="float:left;width: 45vw">Input QMK JSON</div><div style="float:right;width: 45vw">Output ZMK Keymap</div></div>
+  <div><input type="file" id="fileUpload"/></div>
   
   <textarea oninput="updateKeymap();" id="inputText" style="width:45vw; height: 50vh;">{
     "version": 1,
@@ -598,6 +600,25 @@ let basic_key_map = {
 "KC_BRID": "C_BRIGHTNESS_DEC"
 };
 
+
+let input = document.getElementById('fileUpload');
+      input.addEventListener('change', function() {
+
+        if (this.files && this.files[0]) {
+
+            var myFile = this.files[0];
+            var reader = new FileReader();
+            
+            reader.addEventListener('load', function (e) {
+                
+                let input = document.getElementById("inputText");
+                input.value = e.target.result; 
+            });
+            
+            reader.readAsBinaryString(myFile);
+        }
+      });
+
 // utility function for the procedural key map
 let parseKey = function (key) {
   if (!(key in basic_key_map)) {
@@ -609,16 +630,23 @@ let parseKey = function (key) {
 // These are special: when the QMK code starts with any of these, the inputs to the QMK command
 // are parsed and passed in to the function that the QMK code is mapped to.
 // See processKeyInProceduralKeymap
+
+// order these by longest to shortest to prevent partial matches
 let procedural_key_map = {
-  "LT": (layer, key) => `&lt ${layer} ${parseKey(key)}`,
-  "TG": (layer) => `&tog ${layer}`,
-  "TO": (layer) => `&to ${layer}`,
-  "MO": (layer) => `&mo ${layer}`,
   "LCTL_T": (key) => `&mt LEFT_CONTROL ${parseKey(key)}`,
   "LSFT_T": (key) => `&mt LEFT_SHIFT ${parseKey(key)}`,
   "LALT_T": (key) => `&mt LEFT_ALT ${parseKey(key)}`,
   "LGUI_T": (key) => `&mt LEFT_GUI ${parseKey(key)}`,
+  "RCS": (key) => `&kp RC(RS(${parseKey(key)}))`,
+  "LCTL": (key) => `&kp LC(${parseKey(key)})`,
+  "LALT": (key) => `&kp LA(${parseKey(key)})`,
+  "LSA": (key) => `&kp LS(LA(${parseKey(key)}))`,
+  "LGUI": (key) => `&kp LG(${parseKey(key)})`,
   "ANY": (command) => command,
+  "LT": (layer, key) => `&lt ${layer} ${parseKey(key)}`,
+  "TG": (layer) => `&tog ${layer}`,
+  "TO": (layer) => `&to ${layer}`,
+  "MO": (layer) => `&mo ${layer}`,
 }
 
 
