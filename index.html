@@ -1,9 +1,18 @@
+<!DOCTYPE html>
 <html>
   <h1>QMK JSON to ZMK Keymap converter</h1>
   
-  <div>To use, paste your JSON from the <a href="https://config.qmk.fm/">QMK Configurator</a> into the left input, and the output keymap will be in the right text input.</div>
-  <div style="margin-bottom:5vh;">For more information, see the <a href="https://github.com/aaronsantiago/qmk-to-zmk">Github repository</a>.</div>
-  
+  <div>
+    To use, paste your JSON from the <a href="https://config.qmk.fm/">QMK
+    Configurator</a> into the left input, and the output keymap will be in the
+    right text input.  Note that there may be differences in how rows are
+    interpreted on split keyboards.
+  </div>
+  <div style="margin-bottom:2vh;">For more information, see the <a href="https://github.com/aaronsantiago/qmk-to-zmk">Github repository</a>.</div>
+  <div style="margin-bottom:2vh;">
+    <input oninput="updateKeymap();" type="checkbox" id="noop_missing" value="&none">
+    Check to ignore missing keys, or uncheck to highlight with [[]] for manual repair.
+  </div>
   <div><div style="float:left;width: 45vw">Input QMK JSON</div><div style="float:right;width: 45vw">Output ZMK Keymap</div></div>
   <div><input type="file" id="fileUpload"/></div>
   
@@ -149,8 +158,21 @@
 // These will be translated directly as the string on the right.
 let special_key_map = {
 "KC_TRNS" : "&trans",
-"KC_NO" : "&kp F20"
-}
+"KC_NO" : "&none",
+"RESET": "&sys_reset",
+
+// Enabling this broke the build, unclear why; disabled but leaving for reference.
+// "KC_MS_BTN1": "&mkp LCLK",
+// "KC_MS_BTN2": "&mkp RCLK",
+// "KC_MS_BTN3": "&mkp MCLK",
+// "KC_MS_BTN4": "&mkp MB4",
+// "KC_MS_BTN5": "&mkp MB5",
+// "KC_BTN1": "&mkp LCLK",
+// "KC_BTN2": "&mkp RCLK",
+// "KC_BTN3": "&mkp MCLK",
+// "KC_BTN4": "&mkp MB4",
+// "KC_BTN5": "&mkp MB5",
+};
 
 // These are translated with &kp as a prefix.
   // Any keys I was unsure of are set as F20 --Aaron
@@ -597,7 +619,30 @@ let basic_key_map = {
 "KC_MFFD": "C_FAST_FORWARD",
 "KC_MRWD": "C_REWIND",
 "KC_BRIU": "C_BRIGHTNESS_INC",
-"KC_BRID": "C_BRIGHTNESS_DEC"
+"KC_BRID": "C_BRIGHTNESS_DEC",
+
+// Mod-tap modifiers https://docs.qmk.fm/#/mod_tap?id=mod-tap
+"MOD_LCTL": "LEFT_CONTROL",
+"MOD_LSFT": "LEFT_SHIFT",
+"MOD_LALT": "LEFT_ALT",
+"MOD_LGUI": "LEFT_GUI",
+"MOD_RCTL": "RIGHT_CONTROL",
+"MOD_RSFT": "RIGHT_SHIFT",
+"MOD_RALT": "RIGHT_ALT",
+"MOD_RGUI": "RIGHT_GUI",
+"MOD_HYPR": "LC(LS(LA(LEFT_GUI)))",
+"MOD_MEH": "LC(LS(LEFT_ALT))",
+};
+
+const modifierFunctions = {
+  "MOD_LSFT": "LS",
+  "MOD_LCTL": "LC",
+  "MOD_LALT": "LA",
+  "MOD_LGUI": "LG",
+  "MOD_RSFT": "RS",
+  "MOD_RCTL": "RC",
+  "MOD_RALT": "RA",
+  "MOD_RGUI": "RG",
 };
 
 
@@ -619,12 +664,20 @@ let input = document.getElementById('fileUpload');
         }
       });
 
+// Recursively handle OR keys.
+// Able to handle composite values like "KC_LSFT|KC_RSFT" -> "LS(RIGHT_SHIFT)"
+function parseKeyOperands(operands) {
+  const key = operands[0];
+  if (operands.length === 1) {
+    return basic_key_map[key] ?? 'F20';
+  } else {
+    return `${modifierFunctions[key]}(${parseKeyOperands(operands.slice(1))})`;
+  }
+}
+
 // utility function for the procedural key map
 let parseKey = function (key) {
-  if (!(key in basic_key_map)) {
-    return key;
-  }
-  return basic_key_map[key];
+  return parseKeyOperands(key.split('|').map(s => s.trim()));
 }
 
 // These are special: when the QMK code starts with any of these, the inputs to the QMK command
@@ -647,12 +700,15 @@ let procedural_key_map = {
   "TG": (layer) => `&tog ${layer}`,
   "TO": (layer) => `&to ${layer}`,
   "MO": (layer) => `&mo ${layer}`,
+  "MT": (mod, key) => `&mt ${parseKey(mod)} ${parseKey(key)}`,
+  "S": (key) => `&mt LEFT_SHIFT ${parseKey(key)}`,
 }
 
 
 // ****************** JSON PROCESSING ********************************
 let updateKeymap = function() {
   let input = document.getElementById("inputText");
+  const ignoreMissing = document.getElementById('noop_missing').checked;
   let inputObject = JSON.parse(input.value);
 
   // Boilerplate text from the beginning and end of the file
@@ -737,7 +793,7 @@ let updateKeymap = function() {
 
       // pass through the QMK command if we didn't get anything.
       if (!result) {
-        result = key;
+        result = ignoreMissing ? '&none' : `[[${key}]]`;
       }
       layerText += result;
     }
